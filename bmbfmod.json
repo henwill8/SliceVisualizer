@@ -1,0 +1,27 @@
+{
+  "id": "slicevisualizer",
+  "name": "Slice Visualizer",
+  "version": "0.1.0",
+  "author": "Henwill8",
+  "description": [],
+  "category": "Gameplay",
+  "gameVersion": "1.13.2",
+  "platform": "Quest",
+  "components": [
+    {
+      "type": "HookMod",
+      "installAction": {
+        "installLibraryFile": "libslicevisualizer.so"
+      },
+      "uninstallAction": {
+        "removeLibraryFile": "libslicevisualizer.so"
+      }
+    },
+    {
+      "type": "HookModLibrary",
+      "installAction": {
+        "installLibraryFile": "libbeatsaber-hook_1_0_12.so"
+      }
+    }
+  ]
+}
