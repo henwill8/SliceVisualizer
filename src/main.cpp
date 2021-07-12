@@ -51,6 +51,12 @@ Logger& logger() {
 
 #define log(...) logger().info(__VA_ARGS__)
 
+Configuration& getConfig() {
+    static Configuration config(modInfo);
+    config.Load();
+    return config;
+}
+
 static void SaveConfig() {
     if (!getConfig().config.HasMember("DynamicFadeSpeed")) {
         log("Regenerating config!");
@@ -137,7 +143,7 @@ void createSlice(NoteCutInfo* noteCutInfo, NoteController* noteController, float
 
     UnityEngine::GameObject* spriteGO = UnityEngine::GameObject::New_ctor(createcsstr("SpriteImage"));
     spriteGO->get_transform()->SetParent(sliceGraphics->get_transform(), false);
-    spriteGO->get_transform()->set_localPosition(UnityEngine::Vector3{-1.65f/spriteSize, -1.65f/spriteSize, 0});
+    spriteGO->get_transform()->set_localPosition(UnityEngine::Vector3{-0.0f/spriteSize, -0.0f/spriteSize, 0});
     UnityEngine::UI::Image* sprite = spriteGO->AddComponent<UnityEngine::UI::Image*>();
     ColorType colorType = noteController->noteData->colorType;
     if(colorType == ColorType::ColorA) {
@@ -212,6 +218,17 @@ MAKE_HOOK_OFFSETLESS(SongStart, void, AudioTimeSyncController* self, float start
     enabled = getConfig().config["Enabled"].GetBool();
     fadeSpeed = getConfig().config["FadeSpeed"].GetFloat();
     dynamicFadeSpeed = getConfig().config["DynamicFadeSpeed"].GetBool();
+
+    if(cuts.size() > 0) {
+        for(int i = cuts.size()-1; i >= 0; i--) {
+            if(cuts[i].first.first.first->m_CachedPtr.m_value != nullptr) {
+                UnityEngine::GameObject* go = cuts[i].first.first.first->get_gameObject();
+                cuts.erase(cuts.begin()+i);
+                UnityEngine::Object::Destroy(go->get_transform()->GetParent()->get_gameObject());
+                continue;
+            }
+        }
+    }
 
     cuts.clear();
     cutHasBeenMade = false;
