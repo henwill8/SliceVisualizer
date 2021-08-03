@@ -4,11 +4,11 @@ using namespace QuestUI;
 using namespace UnityEngine::UI;
 using namespace UnityEngine;
 
-#define CreateIncrement(parent, floatConfigValue, name, decimals, increment, hasMin, hasMax, minValue, maxValue) QuestUI::BeatSaberUI::CreateIncrementSetting(parent, name, decimals, increment, floatConfigValue.GetFloat(), hasMin, hasMax, minValue, maxValue, UnityEngine::Vector2{}, il2cpp_utils::MakeDelegate<UnityEngine::Events::UnityAction_1<float>*>(classof(UnityEngine::Events::UnityAction_1<float>*), (void*)nullptr, +[](float value) { floatConfigValue.SetFloat(value); }))
+#define CreateIncrementMacro(parent, floatConfigValue, name, decimals, increment, hasMin, hasMax, minValue, maxValue) QuestUI::BeatSaberUI::CreateIncrementSetting(parent, name, decimals, increment, floatConfigValue.GetFloat(), hasMin, hasMax, minValue, maxValue, UnityEngine::Vector2{}, [this](float value) { floatConfigValue.SetFloat(value); })
 
-#define CreateToggle(parent, boolConfigValue, name) QuestUI::BeatSaberUI::CreateToggle(parent, name, boolConfigValue.GetBool(), il2cpp_utils::MakeDelegate<UnityEngine::Events::UnityAction_1<bool>*>(classof(UnityEngine::Events::UnityAction_1<bool>*), (void*)nullptr, +[](bool value) { boolConfigValue.SetBool(value); }))
+#define CreateToggleMacro(parent, boolConfigValue, name) QuestUI::BeatSaberUI::CreateToggle(parent, name, boolConfigValue.GetBool(), [this](bool newValue) { boolConfigValue.SetBool(newValue);})
 
-DEFINE_CLASS(SliceVisualizer::UIController);
+DEFINE_TYPE(SliceVisualizer, UIController);
 
 void SliceVisualizer::UIController::DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling) {
 	if(firstActivation)
@@ -30,9 +30,9 @@ void SliceVisualizer::UIController::DidActivate(bool firstActivation, bool added
 
 		Transform* Parent1 = layout1->get_transform();
 
-        CreateToggle(Parent1, getConfig().config["Enabled"], "Enabled");
-        QuestUI::BeatSaberUI::AddHoverHint(CreateToggle(Parent1, getConfig().config["DynamicFadeSpeed"], "Dynamic Fade Speed")->get_gameObject(), "When enabled, slice visuals will fade faster during faster parts of songs");
-        QuestUI::BeatSaberUI::AddHoverHint(CreateIncrement(Parent1, getConfig().config["FadeSpeed"], "Fade Speed", 0, 1, true, false, 0, 0.0f)->get_gameObject(), "The speed that slice visuals fade at, a higher value means it fades quicker");
+        CreateToggleMacro(Parent1, getConfig().config["Enabled"], "Enabled");
+        QuestUI::BeatSaberUI::AddHoverHint(CreateToggleMacro(Parent1, getConfig().config["DynamicFadeSpeed"], "Dynamic Fade Speed")->get_gameObject(), "When enabled, slice visuals will fade faster during faster parts of songs");
+        QuestUI::BeatSaberUI::AddHoverHint(CreateIncrementMacro(Parent1, getConfig().config["FadeSpeed"], "Fade Speed", 0, 1, true, false, 0, 0.0f)->get_gameObject(), "The speed that slice visuals fade at, a higher value means it fades quicker");
     }
 }
 

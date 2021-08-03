@@ -2,15 +2,15 @@
 #include "../include/codegen.hpp"
 #include "../include/UI.hpp"
 #include "../include/sprites.hpp"
-#include "../extern/beatsaber-hook/shared/config/config-utils.hpp"
-#include "../extern/beatsaber-hook/shared/utils/utils.h"
-#include "../extern/beatsaber-hook/shared/utils/logging.hpp"
-#include "../extern/modloader/shared/modloader.hpp"
-#include "../extern/beatsaber-hook/shared/utils/typedefs.h"
-#include "../extern/beatsaber-hook/shared/utils/il2cpp-utils.hpp"
-#include "../extern/beatsaber-hook/shared/utils/il2cpp-functions.hpp"
-#include "../extern/beatsaber-hook/shared/config/rapidjson-utils.hpp"
-#include "../extern/beatsaber-hook/shared/config/config-utils.hpp"
+#include "beatsaber-hook/shared/utils/utils.h"
+#include "beatsaber-hook/shared/utils/logging.hpp"
+#include "modloader/shared/modloader.hpp"
+#include "beatsaber-hook/shared/utils/typedefs.h"
+#include "beatsaber-hook/shared/utils/hooking.hpp"
+#include "beatsaber-hook/shared/utils/il2cpp-utils.hpp"
+#include "beatsaber-hook/shared/utils/il2cpp-functions.hpp"
+#include "beatsaber-hook/shared/config/rapidjson-utils.hpp"
+#include "beatsaber-hook/shared/config/config-utils.hpp"
 #include "../extern/questui/shared/QuestUI.hpp"
 #include "../extern/questui/shared/BeatSaberUI.hpp"
 #include "../extern/custom-types/shared/register.hpp"
@@ -59,7 +59,7 @@ Configuration& getConfig() {
 
 static void SaveConfig() {
     if (!getConfig().config.HasMember("DynamicFadeSpeed")) {
-        log("Regenerating config!");
+        // log("Regenerating config!");
         getConfig().config.SetObject();
         auto& allocator = getConfig().config.GetAllocator();
         
@@ -68,31 +68,31 @@ static void SaveConfig() {
         getConfig().config.AddMember("DynamicFadeSpeed", true, allocator);
 
         getConfig().Write();
-        log("Config regeneration complete!");
+        // log("Config regeneration complete!");
     }
     else {
-        log("Not regnerating config.");
+        // log("Not regnerating config.");
     }
 }
 
 template<class T>
 UnityEngine::GameObject* FindObject(std::string name, bool byParent = true, bool getLastIndex = false) {
-    log("Finding GameObject of name "+name);
+    // log("Finding GameObject of name %s", name);
     Array<T>* trs = UnityEngine::Resources::FindObjectsOfTypeAll<T>();
-    log("There are "+std::to_string(trs->Length())+" GameObjects");
+    // log("There are "+std::to_string(trs->Length())+" GameObjects");
     for(int i = 0; i < trs->Length(); i++) {
         if(i != trs->Length()-1 && getLastIndex) continue;
         UnityEngine::GameObject* go = trs->values[i]->get_gameObject();
         if(byParent) {
             go = go->get_transform()->GetParent()->get_gameObject();
         }
-        log(to_utf8(csstrtostr(UnityEngine::Transform::GetName(trs->values[i]))));
+        // log(to_utf8(csstrtostr(UnityEngine::Transform::GetName(trs->values[i]))));
         if(to_utf8(csstrtostr(UnityEngine::Transform::GetName(go))) == name){
-            log("Found GameObject");
+            // log("Found GameObject");
             return go;
         }
     }
-    log("Could not find GameObject");
+    // log("Could not find GameObject");
     return nullptr;
 }
 
@@ -125,7 +125,7 @@ float fadeSpeed;
 bool dynamicFadeSpeed = true;
 bool cutHasBeenMade = false;
 
-void createSlice(NoteCutInfo* noteCutInfo, NoteController* noteController, float distanceToCenter) {
+void createSlice(ByRef<NoteCutInfo> noteCutInfo, NoteController* noteController, float distanceToCenter) {
     cutHasBeenMade = true;
 
     if(spawnController == nullptr) {
@@ -175,7 +175,7 @@ void createSlice(NoteCutInfo* noteCutInfo, NoteController* noteController, float
     UnityEngine::RectTransform* lineRT = lineGO->GetComponent<UnityEngine::RectTransform*>();
     lineRT->set_sizeDelta(UnityEngine::Vector2{5, 300});
     
-    lineGO->get_transform()->set_localEulerAngles(UnityEngine::Vector3{0, 0, noteCutInfo->cutDirDeviation});
+    lineGO->get_transform()->set_localEulerAngles(UnityEngine::Vector3{0, 0, noteCutInfo.heldRef.cutDirDeviation});
     lineGO->get_transform()->set_localPosition(UnityEngine::Vector3{distanceToCenter*120/spriteSize - 2.3f/spriteSize, -2.3f/spriteSize, 0});
 
     // log("Adding slice to the cut vector");
@@ -183,7 +183,7 @@ void createSlice(NoteCutInfo* noteCutInfo, NoteController* noteController, float
     // log("Successfully added the slice");
 }
 
-MAKE_HOOK_OFFSETLESS(SongUpdate, void, AudioTimeSyncController* self) {
+MAKE_HOOK_MATCH(SongUpdate, &AudioTimeSyncController::Update, void, AudioTimeSyncController* self) {
     if(cuts.size() > 0 && cutHasBeenMade) {
         for(int i = cuts.size()-1; i >= 0; i--) {
             float dynamicMultiplier = 1;
@@ -211,7 +211,7 @@ MAKE_HOOK_OFFSETLESS(SongUpdate, void, AudioTimeSyncController* self) {
     SongUpdate(self);
 }
 
-MAKE_HOOK_OFFSETLESS(SongStart, void, AudioTimeSyncController* self, float startTimeOffset) {
+MAKE_HOOK_MATCH(SongStart, &AudioTimeSyncController::StartSong, void, AudioTimeSyncController* self, float startTimeOffset) {
 
     SongStart(self, startTimeOffset);
 
@@ -233,13 +233,13 @@ MAKE_HOOK_OFFSETLESS(SongStart, void, AudioTimeSyncController* self, float start
     cuts.clear();
     cutHasBeenMade = false;
 
-    log("Getting arrow sprite");
+    // log("Getting arrow sprite");
     arrowSprite = QuestUI::BeatSaberUI::Base64ToSprite(arrowBase64, 1024, 1024);
-    log("Getting dot sprite");
+    // log("Getting dot sprite");
     dotSprite = QuestUI::BeatSaberUI::Base64ToSprite(dotBase64, 1024, 1024);
-    log("Getting arrow background sprite");
+    // log("Getting arrow background sprite");
     arrowBackgroundSprite = QuestUI::BeatSaberUI::Base64ToSprite(arrowBackgroundBase64, 1024, 1024);
-    log("Getting dot background sprite");
+    // log("Getting dot background sprite");
     dotBackgroundSprite = QuestUI::BeatSaberUI::Base64ToSprite(dotBackgroundBase64, 1024, 1024);
 
     sliceVisualizerGO = UnityEngine::GameObject::New_ctor(createcsstr("SliceVisualizerGO"));
@@ -247,7 +247,7 @@ MAKE_HOOK_OFFSETLESS(SongStart, void, AudioTimeSyncController* self, float start
     if(FindObject<MultiplayerController*>("MultiplayerController", false) == nullptr) {
         getLastIndex = true;
     }
-    log("Get last index is %i", getLastIndex);
+    // log("Get last index is %i", getLastIndex);
     sliceVisualizerGO->get_transform()->SetParent(FindObject<ComboUIController*>("ComboPanel", false, getLastIndex)->get_transform());
     sliceVisualizerGO->get_transform()->set_position(UnityEngine::Vector3{0, 3, 15});
     sliceVisualizerGO->get_transform()->set_eulerAngles(UnityEngine::Vector3{0, 0, 0});
@@ -256,9 +256,9 @@ MAKE_HOOK_OFFSETLESS(SongStart, void, AudioTimeSyncController* self, float start
     spawnController = nullptr;
 }
 
-MAKE_HOOK_OFFSETLESS(NoteController_SendNoteWasCutEvent, void, NoteController* self, NoteCutInfo* noteCutInfo) {
-    
-    if(noteCutInfo->get_allIsOK() && enabled) {
+MAKE_HOOK_MATCH(NoteController_SendNoteWasCutEvent, &NoteController::SendNoteWasCutEvent, void, NoteController* self, ByRef<NoteCutInfo> noteCutInfo) {
+
+    if(noteCutInfo.heldRef.get_allIsOK() && enabled) {
         if(dynamicFadeSpeed) {
             nextNoteTime = self->noteData->timeToNextColorNote;
         }
@@ -268,7 +268,7 @@ MAKE_HOOK_OFFSETLESS(NoteController_SendNoteWasCutEvent, void, NoteController* s
     NoteController_SendNoteWasCutEvent(self, noteCutInfo);
 }
 
-MAKE_HOOK_OFFSETLESS(GameNoteController_HandleBigWasCutBySaber, void, GameNoteController* self, Il2CppObject* saber, UnityEngine::Vector3 cutPoint, UnityEngine::Quaternion orientation, Vector3 cutDirVec) {
+MAKE_HOOK_MATCH(GameNoteController_HandleBigWasCutBySaber, &GameNoteController::HandleBigWasCutBySaber, void, GameNoteController* self, Saber* saber, UnityEngine::Vector3 cutPoint, UnityEngine::Quaternion orientation, UnityEngine::Vector3 cutDirVec) {
     
     UnityEngine::Vector3 vector = orientation * UnityEngine::Vector3::get_up();
     UnityEngine::Plane plane = {vector, cutPoint};
@@ -277,16 +277,11 @@ MAKE_HOOK_OFFSETLESS(GameNoteController_HandleBigWasCutBySaber, void, GameNoteCo
     GameNoteController_HandleBigWasCutBySaber(self, saber, cutPoint, orientation, cutDirVec);
 }
 
-MAKE_HOOK_OFFSETLESS(ColorManager_Start, void, ColorManager* self) {
-
-    log("ColorManager_Start");
-
-    ColorManager_Start(self);
-    
-    leftColor = self->ColorForSaberType(SaberType::SaberA);
-    rightColor = self->ColorForSaberType(SaberType::SaberB);
-
-    log("Got both colors successfully");
+MAKE_HOOK_FIND_CLASS_UNSAFE_INSTANCE(GameplayCoreSceneSetupData_ctor, "", "GameplayCoreSceneSetupData", ".ctor", void, GlobalNamespace::GameplayCoreSceneSetupData* self, GlobalNamespace::IDifficultyBeatmap* difficultyBeatmap, GlobalNamespace::IPreviewBeatmapLevel* previewBeatmapLevel, GlobalNamespace::GameplayModifiers* gameplayModifiers, GlobalNamespace::PlayerSpecificSettings* playerSpecificSettings, GlobalNamespace::PracticeSettings* practiceSettings, bool useTestNoteCutSoundEffects, GlobalNamespace::EnvironmentInfoSO* environmentInfo, GlobalNamespace::ColorScheme* colorScheme)
+{
+    leftColor = colorScheme->get_saberAColor();
+    rightColor = colorScheme->get_saberBColor();
+    GameplayCoreSceneSetupData_ctor(self, difficultyBeatmap, previewBeatmapLevel, gameplayModifiers, playerSpecificSettings, practiceSettings, useTestNoteCutSoundEffects, environmentInfo, colorScheme);
 }
 
 extern "C" void setup(ModInfo& info) {
@@ -301,14 +296,14 @@ extern "C" void setup(ModInfo& info) {
 extern "C" void load() {
     QuestUI::Init();
 
-    custom_types::Register::RegisterType<SliceVisualizer::UIController>();
+    custom_types::Register::AutoRegister();
     QuestUI::Register::RegisterModSettingsViewController<SliceVisualizer::UIController*>(modInfo, "Slice Visualizer");
 
-    log("Installing hooks...");
-    INSTALL_HOOK_OFFSETLESS(logger().get(), SongUpdate, il2cpp_utils::FindMethodUnsafe("", "AudioTimeSyncController", "Update", 0));
-    INSTALL_HOOK_OFFSETLESS(logger().get(), SongStart, il2cpp_utils::FindMethodUnsafe("", "AudioTimeSyncController", "StartSong", 1));
-    INSTALL_HOOK_OFFSETLESS(logger().get(), NoteController_SendNoteWasCutEvent, il2cpp_utils::FindMethodUnsafe("", "NoteController", "SendNoteWasCutEvent", 1));
-    INSTALL_HOOK_OFFSETLESS(logger().get(), GameNoteController_HandleBigWasCutBySaber, il2cpp_utils::FindMethodUnsafe("", "GameNoteController", "HandleBigWasCutBySaber", 4));
-    INSTALL_HOOK_OFFSETLESS(logger().get(), ColorManager_Start, il2cpp_utils::FindMethodUnsafe("", "ColorManager", "Start", 0));
-    log("Installed all hooks!");
+    // log("Installing hooks...");
+    INSTALL_HOOK(logger().get(), SongUpdate);
+    INSTALL_HOOK(logger().get(), SongStart);
+    INSTALL_HOOK(logger().get(), NoteController_SendNoteWasCutEvent);
+    INSTALL_HOOK(logger().get(), GameNoteController_HandleBigWasCutBySaber);
+    INSTALL_HOOK(logger().get(), GameplayCoreSceneSetupData_ctor);
+    // log("Installed all hooks!");
 }
