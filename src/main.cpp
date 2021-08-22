@@ -125,6 +125,8 @@ float fadeSpeed;
 bool dynamicFadeSpeed = true;
 bool cutHasBeenMade = false;
 
+UnityEngine::Material* uiMat;
+
 void createSlice(ByRef<NoteCutInfo> noteCutInfo, NoteController* noteController, float distanceToCenter) {
     cutHasBeenMade = true;
 
@@ -145,6 +147,7 @@ void createSlice(ByRef<NoteCutInfo> noteCutInfo, NoteController* noteController,
     spriteGO->get_transform()->SetParent(sliceGraphics->get_transform(), false);
     spriteGO->get_transform()->set_localPosition(UnityEngine::Vector3{-0.0f/spriteSize, -0.0f/spriteSize, 0});
     UnityEngine::UI::Image* sprite = spriteGO->AddComponent<UnityEngine::UI::Image*>();
+    sprite->set_material(uiMat);
     ColorType colorType = noteController->noteData->colorType;
     if(colorType == ColorType::ColorA) {
         sprite->set_color(leftColor);
@@ -158,6 +161,7 @@ void createSlice(ByRef<NoteCutInfo> noteCutInfo, NoteController* noteController,
     spriteArrowGO->get_transform()->SetParent(spriteGO->get_transform(), false);
     spriteArrowGO->get_transform()->set_localPosition(UnityEngine::Vector3{0, 0, 0});
     UnityEngine::UI::Image* spriteArrow = spriteArrowGO->AddComponent<UnityEngine::UI::Image*>();
+    spriteArrow->set_material(uiMat);
 
     if(noteController->noteData->cutDirection == NoteCutDirection::Any) {
         sprite->set_sprite(dotBackgroundSprite);
@@ -171,7 +175,9 @@ void createSlice(ByRef<NoteCutInfo> noteCutInfo, NoteController* noteController,
     UnityEngine::GameObject* lineGO = UnityEngine::GameObject::New_ctor(createcsstr("CutLine"));
     lineGO->get_transform()->SetParent(spriteGO->get_transform(), false);
     lineGO->get_transform()->set_localScale(UnityEngine::Vector3{1.0f/spriteSize, 1.0f/spriteSize, 1.0f/spriteSize});
-    lineGO->AddComponent<UnityEngine::UI::Image*>()->set_color(UnityEngine::Color{0, 0, 0, 1});
+    UnityEngine::UI::Image* lineSprite = lineGO->AddComponent<UnityEngine::UI::Image*>();
+    lineSprite->set_color(UnityEngine::Color{0, 0, 0, 1});
+    lineSprite->set_material(uiMat);
     UnityEngine::RectTransform* lineRT = lineGO->GetComponent<UnityEngine::RectTransform*>();
     lineRT->set_sizeDelta(UnityEngine::Vector2{5, 300});
     
@@ -214,6 +220,8 @@ MAKE_HOOK_MATCH(SongUpdate, &AudioTimeSyncController::Update, void, AudioTimeSyn
 MAKE_HOOK_MATCH(SongStart, &AudioTimeSyncController::StartSong, void, AudioTimeSyncController* self, float startTimeOffset) {
 
     SongStart(self, startTimeOffset);
+
+    uiMat = QuestUI::ArrayUtil::First(UnityEngine::Resources::FindObjectsOfTypeAll<UnityEngine::Material*>(), [](UnityEngine::Material* x) { return to_utf8(csstrtostr(x->get_name())) == "UINoGlow"; });
 
     enabled = getConfig().config["Enabled"].GetBool();
     fadeSpeed = getConfig().config["FadeSpeed"].GetFloat();
