@@ -294,7 +294,7 @@ MAKE_HOOK_FIND_CLASS_UNSAFE_INSTANCE(GameplayCoreSceneSetupData_ctor, "", "Gamep
 
 extern "C" void setup(ModInfo& info) {
     info.id = "SliceVisualizer";
-    info.version = "0.1.0";
+    info.version = "4.2.0";
     modInfo = info;
     
     getConfig().Load();
